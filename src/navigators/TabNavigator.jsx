@@ -3,12 +3,12 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Platform, Text } from "react-native";
 import HomeScreen from "../screens/HomeScreen";
 import SearchScreen from "../screens/SearchScreen";
-import WishListScreen from "../screens/WishListScreen";
 import ProfileScreen from './../screens/ProfileScreen';
 import Entypo from '@expo/vector-icons/Entypo';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FavoriteScreen from "../screens/FavortieScreen";
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();
@@ -34,8 +34,8 @@ const TabNavigator = () => {
             case "Search":
               icon = <AntDesign name="search1" size={size} color={focused ? "#ffb703" : "white"} />;
               break;
-            case "Wishlist":
-              icon = <MaterialCommunityIcons name="bookmark-minus-outline" size={size} color={focused ? "#ffb703" : "white"} />
+            case "Favorite":
+              icon = <MaterialIcons name="favorite" size={size} color={focused ? "#ffb703" : "white"} />
               break;
             case "Profile":
               icon = <FontAwesome5 name="user" size={size} color={focused ? "#ffb703" : "white"} />
@@ -64,7 +64,7 @@ const TabNavigator = () => {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Wishlist" component={WishListScreen} />
+      <Tab.Screen name="Favorite" component={FavoriteScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

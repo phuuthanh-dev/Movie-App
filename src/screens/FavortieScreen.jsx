@@ -15,7 +15,7 @@ import { getFavoriteMovies } from "../utils/storage";
 import { useFocusEffect } from "@react-navigation/native";
 import SearchBar from "../components/SearchBar";
 
-const WishlistScreen = ({ navigation }) => {
+const FavoriteScreen = ({ navigation }) => {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -74,7 +74,7 @@ const WishlistScreen = ({ navigation }) => {
         <ActivityIndicator style={styles.loader} size="large" />
       ) : (
         <>
-          <Text style={styles.title}>Your Wishlist</Text>
+          <Text style={styles.title}>Your Favorites</Text>
           <FlatList
             data={movies}
             renderItem={({ item }) => {
@@ -101,7 +101,7 @@ const WishlistScreen = ({ navigation }) => {
   );
 };
 
-export default WishlistScreen;
+export default FavoriteScreen;
 
 const styles = StyleSheet.create({
   title: {

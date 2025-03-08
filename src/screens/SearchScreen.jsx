@@ -11,20 +11,28 @@ import {
 } from "react-native";
 import SearchBar from "../components/SearchBar";
 import MovieCard from "../components/MovieCard";
-import { getPopularActors, getPopularMovies, searchMovies } from "../apis/tmdb";
+import {
+  getPopularActors,
+  getPopularMovies,
+  getPopularTV,
+  getTrendingPeople,
+  searchMovies,
+  searchActors,
+  searchTV,
+  searchPeople,
+} from "../apis/tmdb";
 import SpaceComponent from "../components/SpaceComponent";
 import ActorCard from "../components/ActorCard";
 
 const SearchScreen = ({ navigation }) => {
   const tabs = [
-    { key: "movie", label: "Movie" },
-    { key: "actor", label: "Actor" },
-    { key: "tv", label: "TV" },
-    { key: "company", label: "Company" },
+    { key: "movie", label: "Movies", fetch: getPopularMovies, search: searchMovies },
+    { key: "tv", label: "TV Shows", fetch: getPopularTV, search: searchTV },
+    { key: "actor", label: "Actors", fetch: getPopularActors, search: searchActors },
+    { key: "people", label: "People", fetch: getTrendingPeople, search: searchPeople },
   ];
   const [query, setQuery] = useState("");
-  const [movies, setMovies] = useState([]);
-  const [actors, setActors] = useState([]);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [selectedTab, setSelectedTab] = useState("movie");
@@ -32,7 +40,7 @@ const SearchScreen = ({ navigation }) => {
   // Debounce Effect
   useEffect(() => {
     if (query.trim() === "") {
-      loadPopularMovies();
+      handleGetData();
     } else {
       const delayDebounce = setTimeout(() => {
         if (query.trim() !== "") {
@@ -42,54 +50,21 @@ const SearchScreen = ({ navigation }) => {
 
       return () => clearTimeout(delayDebounce);
     }
-  }, [query]);
-
-  useEffect(() => {
-    loadPopularMovies();
-  }, []);
+  }, [query, selectedTab]);
 
   useEffect(() => {
     handleGetData();
-  }, [selectedTab]);
+  }, []);
 
   const handleGetData = async () => {
     setLoading(true);
     try {
-      let data = [];
-      switch (selectedTab) {
-        case "movie":
-          data = await getPopularMovies();
-          setTitle("Popular Movies");
-          break;
-        case "actor":
-          data = await getPopularActors();
-          setActors(data);
-          setTitle("Popular Actors");
-          break;
-        case "tv":
-          setTitle("Popular TV Shows");
-          break;
-        case "company":
-          setTitle("Popular Companies");
-          break;
-        default:
-          break;
+      const tab = tabs.find((t) => t.key === selectedTab);
+      if (tab) {
+        const result = await tab.fetch();
+        setData(result.filter((item) => item.poster_path || item.profile_path));
+        setTitle(`Popular ${tab.label}`);
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadPopularMovies = async () => {
-    setLoading(true);
-    try {
-      const data = await getPopularMovies();
-      const filteredMovies = data.filter((movie) => movie.poster_path);
-      setMovies(filteredMovies);
-      setTitle("Popular Movies");
-      setLoading(false);
     } catch (error) {
       console.error(error);
     } finally {
@@ -101,14 +76,110 @@ const SearchScreen = ({ navigation }) => {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const results = await searchMovies(query);
-      const filteredMovies = results.filter((movie) => movie.poster_path);
-      setMovies(filteredMovies);
-      setTitle("Search Results");
+      const tab = tabs.find((t) => t.key === selectedTab);
+      if (tab) {
+        const result = await tab.search(query);
+        setData(result.filter((item) => item.poster_path || item.profile_path));
+        setTitle(`${tab.label} Search Results`);
+      }
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renderContent = () => {
+    switch (selectedTab) {
+      case "movie":
+        return (
+          <FlatList
+            key="movie-grid"
+            data={data}
+            renderItem={({ item }) => (
+              <MovieCard
+                movie={item}
+                width={120}
+                isShowInfo={false}
+                onPress={() =>
+                  navigation.navigate("MovieDetailScreen", { movie: item })
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={<SpaceComponent height={70} />}
+          />
+        );
+      case "actor":
+        return (
+          <FlatList
+            key="actor-grid"
+            data={data}
+            renderItem={({ item }) => (
+              <ActorCard
+                actor={item}
+                onPress={() =>
+                  navigation.navigate("ActorDetailScreen", { actor: item })
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={<SpaceComponent height={70} />}
+          />
+        );
+      case "tv":
+        return (
+          <FlatList
+            key="tv-grid"
+            data={data}
+            renderItem={({ item }) => (
+              <MovieCard
+                movie={{ ...item, title: item.name }}
+                width={120}
+                isShowInfo={false}
+                onPress={() =>
+                  navigation.navigate("MovieDetailScreen", {
+                    movie: item,
+                    mediaType: "tv",
+                  })
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={<SpaceComponent height={70} />}
+          />
+        );
+      case "people":
+        return (
+          <FlatList
+            key="people-grid"
+            data={data}
+            renderItem={({ item }) => (
+              <ActorCard
+                actor={item}
+                onPress={() =>
+                  navigation.navigate("ActorDetailScreen", { actor: item })
+                }
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            numColumns={3}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={styles.listContent}
+            ListFooterComponent={<SpaceComponent height={70} />}
+          />
+        );
+      default:
+        return null;
     }
   };
 
@@ -141,48 +212,7 @@ const SearchScreen = ({ navigation }) => {
             ))}
           </View>
           <Text style={styles.title}>{title}</Text>
-          {selectedTab === "movie" && (
-            <FlatList
-              data={movies}
-              renderItem={({ item }) => {
-                return (
-                  <MovieCard
-                    movie={item}
-                    width={120}
-                    isShowInfo={false}
-                    onPress={() =>
-                      navigation.navigate("MovieDetailScreen", { movie: item })
-                    }
-                  />
-                );
-              }}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={3}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.listContent}
-              ListFooterComponent={<SpaceComponent height={70} />}
-            />
-          )}
-          {selectedTab === "actor" && (
-            <FlatList
-              data={actors}
-              renderItem={({ item }) => {
-                return (
-                  <ActorCard
-                    actor={item}
-                    onPress={() =>
-                      navigation.navigate("ActorDetailScreen", { actor: item })
-                    }
-                  />
-                );
-              }}
-              keyExtractor={(item) => item.id.toString()}
-              numColumns={3}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.listContent}
-              ListFooterComponent={<SpaceComponent height={70} />}
-            />
-          )}
+          {renderContent()}
         </>
       )}
     </SafeAreaView>
@@ -226,7 +256,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   activeTabButton: {
     borderBottomWidth: 2,
@@ -240,6 +270,25 @@ const styles = StyleSheet.create({
   activeTabText: {
     fontFamily: "Poppins-Bold",
     color: "#ffca45",
+  },
+  companyItem: {
+    backgroundColor: "#003355",
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  companyName: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "Poppins-Bold",
+  },
+  companyCountry: {
+    color: "#ffca45",
+    fontSize: 14,
+    fontFamily: "Poppins-Regular",
+    marginTop: 4,
   },
 });
 

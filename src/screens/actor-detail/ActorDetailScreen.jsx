@@ -147,13 +147,11 @@ const ActorDetailScreen = ({ route, navigation }) => {
             </Text>
           )}
 
-          {actorDetails.gender && (
-            <Text style={styles.metaInfo}>
-              <FontAwesome name="intersex" size={16} color="#888" />
-              <SpaceComponent width={7} />
-              Gender: {actorDetails.gender === 1 ? "Female" : "Male"}
-            </Text>
-          )}
+          <Text style={styles.metaInfo}>
+            <FontAwesome name="intersex" size={16} color="#888" />
+            <SpaceComponent width={7} />
+            Gender: {actorDetails.gender === 1 ? "Female" : "Male"}
+          </Text>
 
           {/* Social Media Links */}
           <Text style={styles.sectionTitle}>Social Media</Text>

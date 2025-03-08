@@ -13,7 +13,11 @@ import {
   FlatList,
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
-import { TMDB_IMAGE_W200_BASE_URL, TMDB_IMAGE_BASE_URL, TMDB_IMAGE_ORIGINAL_BASE_URL } from "@env";
+import {
+  TMDB_IMAGE_W200_BASE_URL,
+  TMDB_IMAGE_BASE_URL,
+  TMDB_IMAGE_ORIGINAL_BASE_URL,
+} from "@env";
 import {
   getMovieDetails,
   getMovieReviews,
@@ -25,12 +29,18 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import SpaceComponent from "../../components/SpaceComponent";
 import { ArrowLeft } from "iconsax-react-native";
-import { getFavoriteMovies, toggleFavorite } from "../../utils/storage";
+import {
+  getFavoriteMovies,
+  getPlaylist,
+  toggleFavorite,
+  toggleToPlaylist,
+} from "../../utils/storage";
 import WebView from "react-native-webview";
 import ChartRating from "../../components/ChartRating";
 import ReviewSection from "./components/ReviewSection";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import CastSection from "./components/CastSection";
+import EpisodesSection from "./components/EpisodesSection";
 import Fontisto from "@expo/vector-icons/Fontisto";
 
 const MovieDetailScreen = ({ route, navigation }) => {
@@ -41,6 +51,7 @@ const MovieDetailScreen = ({ route, navigation }) => {
   const [details, setDetails] = useState(null);
   const [videos, setVideos] = useState([]);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isAddedToPlaylist, setIsAddedToPlaylist] = useState(false);
   const [trailerVisible, setTrailerVisible] = useState(false);
   const [trailerKey, setTrailerKey] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -48,7 +59,7 @@ const MovieDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     loadMovieDetails();
-    checkFavoriteStatus();
+    checkButtonStatus();
     loadMovieReviews();
     loadWatchProviders();
   }, []);
@@ -66,9 +77,11 @@ const MovieDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  const checkFavoriteStatus = async () => {
+  const checkButtonStatus = async () => {
     const favorites = await getFavoriteMovies();
+    const playlist = await getPlaylist();
     setIsFavorite(favorites.some((fav) => fav.id === movie.id));
+    setIsAddedToPlaylist(playlist.some((fav) => fav.id === movie.id));
   };
 
   const handleToggleFavorite = async () => {
@@ -153,6 +166,11 @@ const MovieDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleToggleToPlaylist = async () => {
+    await toggleToPlaylist(movie);
+    setIsAddedToPlaylist(!isAddedToPlaylist);
+  };
+
   if (!details) {
     return null;
   }
@@ -190,7 +208,9 @@ const MovieDetailScreen = ({ route, navigation }) => {
               uri: imageUri,
             }}
             onLoad={() => {
-              setImageUri(`${TMDB_IMAGE_ORIGINAL_BASE_URL}${movie.backdrop_path}`);
+              setImageUri(
+                `${TMDB_IMAGE_ORIGINAL_BASE_URL}${movie.backdrop_path}`
+              );
             }}
           />
           <View style={styles.posterContainer}>
@@ -205,39 +225,52 @@ const MovieDetailScreen = ({ route, navigation }) => {
 
         {/* Movie Info */}
         <View style={styles.infoContainer}>
-          <Text style={styles.title}>{movie.title || movie.name}</Text>
+          <Text style={styles.title}>{movie?.title || movie?.name}</Text>
 
-          <Text style={styles.director}>
-            <MaterialCommunityIcons
-              name="movie-open-star"
-              size={16}
-              color="#888"
-            />
-            <SpaceComponent width={7} />
-            {mediaType === "tv"
-              ? `Published by ${details.production_companies[0].name}`
-              : `Directed by ${
-                  details.credits?.crew?.find((c) => c.job === "Director")
-                    ?.name || "Unknown"
-                }`}
-          </Text>
+          {mediaType === "tv" && details.production_companies.length > 0 && (
+            <Text style={styles.director}>
+              <MaterialCommunityIcons
+                name="movie-open-star"
+                size={16}
+                color="#888"
+              />
+              <SpaceComponent width={7} />
+              {`Published by ${details.production_companies[0]?.name}`}
+            </Text>
+          )}
+
+          {mediaType !== "tv" && details.credits?.crew.length > 0 && (
+            <Text style={styles.director}>
+              <MaterialCommunityIcons
+                name="movie-open-star"
+                size={16}
+                color="#888"
+              />
+              <SpaceComponent width={7} />
+              {`Directed by ${
+                details.credits?.crew?.find((c) => c.job === "Director")?.name
+              }`}
+            </Text>
+          )}
 
           {/* Genre Info */}
-          <View style={styles.genreInfo}>
-            <Fontisto name="film" size={16} color="#888" />
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={details.genres}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item, index }) => (
-                <Text style={styles.genreText}>
-                  {item.name}
-                  {index !== details.genres.length - 1 && "  -"}
-                </Text>
-              )}
-            />
-          </View>
+          {details.genres.length > 0 && (
+            <View style={styles.genreInfo}>
+              <Fontisto name="film" size={16} color="#888" />
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={details.genres}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item, index }) => (
+                  <Text style={styles.genreText}>
+                    {item.name}
+                    {index !== details.genres.length - 1 ? "  -" : ""}
+                  </Text>
+                )}
+              />
+            </View>
+          )}
 
           {details.tagline && (
             <Text style={styles.director}>
@@ -251,52 +284,54 @@ const MovieDetailScreen = ({ route, navigation }) => {
           <View style={styles.metaInfo}>
             {mediaType === "tv" ? (
               <>
-                <MaterialIcons name="local-movies" size={16} color="#888" />
-                <Text style={styles.metaText}>
-                  {details.runtime
-                    ? `${Math.floor(details.runtime / 60)}h ${
-                        details.runtime % 60
-                      }m`
-                    : details.number_of_episodes}
-                  {mediaType === "tv" ? " episodes" : ""}
-                </Text>
-
-                <Text style={styles.metaText}> • </Text>
-                <MaterialCommunityIcons
-                  name="movie-open"
-                  size={16}
-                  color="#888"
-                />
-                <Text style={styles.metaText}>
-                  {details.number_of_seasons} seasons
-                </Text>
+                {details.number_of_episodes && (
+                  <>
+                    <MaterialIcons name="local-movies" size={16} color="#888" />
+                    <Text style={[styles.metaText, { marginRight: 0 }]}>
+                      {details.number_of_episodes} episodes
+                    </Text>
+                    <Text style={styles.metaText}> • </Text>
+                  </>
+                )}
+                {details.number_of_seasons && (
+                  <>
+                    <MaterialCommunityIcons
+                      name="movie-open"
+                      size={16}
+                      color="#888"
+                    />
+                    <Text style={[styles.metaText, { marginRight: 0 }]}>
+                      {details.number_of_seasons} seasons
+                    </Text>
+                    <Text style={styles.metaText}> • </Text>
+                  </>
+                )}
               </>
             ) : (
               <>
                 <Icon name="time-outline" size={16} color="#888" />
-                <Text style={styles.metaText}>
-                  {details.runtime
-                    ? `${Math.floor(details.runtime / 60)}h ${
-                        details.runtime % 60
-                      }m`
-                    : details.number_of_episodes}
-                  {mediaType === "tv" ? " episodes" : ""}
+                <Text style={[styles.metaText, { marginRight: 0 }]}>
+                  {`${Math.floor(details.runtime / 60)}h ${
+                    details.runtime % 60
+                  }m`}
+                </Text>
+                <Text style={styles.metaText}> • </Text>
+              </>
+            )}
+            {(movie.release_date || movie.first_air_date) && (
+              <>
+                <MaterialCommunityIcons
+                  name="calendar-clock"
+                  size={16}
+                  color="#888"
+                />
+                <Text style={[styles.metaText, { marginRight: 0 }]}>
+                  {new Date(
+                    movie.release_date || movie.first_air_date
+                  ).toLocaleDateString()}
                 </Text>
               </>
             )}
-
-            <Text style={styles.metaText}> • </Text>
-            <MaterialCommunityIcons
-              name="calendar-clock"
-              size={16}
-              color="#888"
-            />
-            <Text style={styles.metaText}>
-              {new Date(
-                movie.release_date || movie.first_air_date
-              ).toLocaleDateString()}
-            </Text>
-
             {!(mediaType === "tv") && (
               <>
                 <Text style={styles.metaText}> • </Text>
@@ -349,17 +384,39 @@ const MovieDetailScreen = ({ route, navigation }) => {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.logButton}>
-              <MaterialIcons name="add-circle" size={24} color="black" />
-              <Text style={styles.logButtonText}>Log</Text>
+            <TouchableOpacity
+              style={styles.logButton}
+              onPress={handleToggleToPlaylist}
+            >
+              {isAddedToPlaylist ? (
+                <>
+                  <MaterialIcons name="remove-circle" size={24} color="black" />
+                  <Text style={styles.logButtonText}>Remove from Playlist</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="add-circle" size={24} color="black" />
+                  <Text style={styles.logButtonText}>Add to Playlist</Text>
+                </>
+              )}
             </TouchableOpacity>
           </ScrollView>
 
           {/* Overview */}
           <Text style={styles.overview}>{movie.overview}</Text>
 
+          {/* Episodes Section for TV Shows */}
+          {mediaType === "tv" && (
+            <EpisodesSection
+              tvId={movie.id}
+              numberOfSeasons={details.number_of_seasons}
+            />
+          )}
+
           {/* Cast Section */}
-          <CastSection details={details} />
+          {details.credits?.cast?.length > 0 && (
+            <CastSection details={details} />
+          )}
 
           {/* Ratings Section */}
           <Text style={styles.sectionTitle}>Ratings</Text>
@@ -373,7 +430,7 @@ const MovieDetailScreen = ({ route, navigation }) => {
           </View>
 
           {/* Reviews Section */}
-          <ReviewSection reviews={reviews} />
+          {reviews.length > 0 && <ReviewSection reviews={reviews} />}
         </View>
       </ScrollView>
 
@@ -398,7 +455,7 @@ const styles = StyleSheet.create({
   },
   backdropImage: {
     width: "100%",
-    height: "100%",
+    height: "100%"
   },
   posterContainer: {
     position: "absolute",

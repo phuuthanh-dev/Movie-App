@@ -133,3 +133,75 @@ export const getActorDetails = async (actorId) => {
     throw error;
   }
 };
+
+export const searchActors = async (query) => {
+  try {
+    const response = await api.get("/search/person", {
+      params: {
+        query,
+      },
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error("Error searching actors:", error);
+    throw error;
+  }
+};
+
+export const searchTV = async (query) => {
+  try {
+    const response = await api.get("/search/tv", {
+      params: {
+        query,
+      },
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error("Error searching TV shows:", error);
+    throw error;
+  }
+};
+
+export const getPopularTV = async () => {
+  try {
+    const response = await api.get("/tv/popular");
+    return response.data.results;
+  } catch (error) {
+    console.error("Error fetching popular TV shows:", error);
+    throw error;
+  }
+};
+
+export const getTrendingPeople = async () => {
+  try {
+    const response = await api.get("/trending/person/week");
+    return response.data.results;
+  } catch (error) {
+    console.error("Error fetching trending people:", error);
+    throw error;
+  }
+};
+
+export const searchPeople = async (query) => {
+  try {
+    const response = await api.get("/search/person", {
+      params: {
+        query,
+      },
+    });
+    return response.data.results;
+  } catch (error) {
+    console.error("Error searching people:", error);
+    throw error;
+  }
+};
+
+export const getTVSeasonDetails = async (tvId, seasonNumber) => {
+  try {
+    const response = await api.get(`/tv/${tvId}/season/${seasonNumber}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching TV season details:", error);
+    throw error;
+  }
+};

@@ -13,16 +13,19 @@ import SpaceComponent from "./../components/SpaceComponent";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useFocusEffect } from "@react-navigation/native";
-import { getFavoriteMovies } from "../utils/storage";
+import { getFavoriteMovies, getPlaylist } from "../utils/storage";
 import MovieCard from "../components/MovieCard";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const ProfileScreen = ({ navigation }) => {
   const [favoriteMovies, setFavoriteMovies] = useState([]);
+  const [playlist, setPlaylist] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       loadFavoriteMovies();
+      loadPlaylist();
     }, [])
   );
 
@@ -31,7 +34,18 @@ const ProfileScreen = ({ navigation }) => {
     try {
       const data = await getFavoriteMovies();
       setFavoriteMovies(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPlaylist = async () => {
+    setLoading(true);
+    try {
+      const data = await getPlaylist();
+      setPlaylist(data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -58,7 +72,7 @@ const ProfileScreen = ({ navigation }) => {
                   style={{
                     fontFamily: "Poppins-Bold",
                     color: "white",
-                    fontSize: 24
+                    fontSize: 24,
                   }}
                 >
                   Phùng Hữu Thành
@@ -75,7 +89,7 @@ const ProfileScreen = ({ navigation }) => {
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
-                    marginTop: Platform.OS === 'android' ? 0 : 10,
+                    marginTop: Platform.OS === "android" ? 0 : 10,
                   }}
                 >
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -147,7 +161,7 @@ const ProfileScreen = ({ navigation }) => {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
             >
-              <AntDesign name="calendar" size={10} color="#fff" />
+              <MaterialIcons name="favorite" size={14} color="#fff" />
               <Text
                 style={{
                   fontFamily: "Poppins-Regular",
@@ -155,7 +169,7 @@ const ProfileScreen = ({ navigation }) => {
                   fontSize: 12,
                 }}
               >
-                Movies Watched
+                Movies Favorites
               </Text>
             </View>
             <Text
@@ -165,7 +179,7 @@ const ProfileScreen = ({ navigation }) => {
                 fontSize: 24,
               }}
             >
-              2000
+              {favoriteMovies.length}
             </Text>
           </View>
           <View
@@ -181,7 +195,7 @@ const ProfileScreen = ({ navigation }) => {
             <View
               style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
             >
-              <Fontisto name="clock" size={12} color="#fff" />
+              <Fontisto name="clock" size={14} color="#fff" />
               <Text
                 style={{
                   fontFamily: "Poppins-Regular",
@@ -228,6 +242,36 @@ const ProfileScreen = ({ navigation }) => {
             contentContainerStyle={styles.listContent}
           />
         </View>
+        {playlist.length > 0 && (
+          <View>
+            <Text style={{ color: "#fff", fontSize: 22, fontWeight: "bold" }}>
+              Your Playlist
+            </Text>
+            <FlatList
+              refreshing={loading}
+              onRefresh={loadPlaylist}
+              data={playlist}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <MovieCard
+                  isShowInfo={false}
+                  movie={item}
+                  width={120}
+                  onPress={() =>
+                    navigation.navigate("MovieDetailScreen", {
+                      movie: item,
+                      mediaType: item.title ? "movie" : "tv",
+                    })
+                  }
+                />
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal={true}
+              contentContainerStyle={styles.listContent}
+            />
+          </View>
+        )}
+        <SpaceComponent height={50} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -239,7 +283,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#002335",
-    paddingTop: Platform.OS === 'android' ? 40 : 0
+    paddingTop: Platform.OS === "android" ? 40 : 0,
   },
   container: {
     flex: 1,

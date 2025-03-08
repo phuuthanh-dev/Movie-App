@@ -1,17 +1,23 @@
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
-import { TMDB_IMAGE_BASE_URL } from "@env";
+import { TMDB_IMAGE_BASE_URL, TMDB_IMAGE_W200_BASE_URL } from "@env";
+import { useState } from "react";
 
 const ActorCard = ({ actor, onPress }) => {
+  const [imageUri, setImageUri] = useState(
+    `${TMDB_IMAGE_W200_BASE_URL}${actor.profile_path}`
+  );
   return (
     <TouchableOpacity style={styles.castItem} onPress={onPress}>
       <Image
         style={styles.castImage}
         source={{
-          uri: actor.profile_path
-            ? `${TMDB_IMAGE_BASE_URL}${actor.profile_path}`
-            : "https://upload.wikimedia.org/wikipedia/commons/1/1e/Default-avatar.jpg",
+          uri: imageUri,
         }}
+        onError={() => setImageUri(null)}
+        onLoad={() =>
+          setImageUri(`${TMDB_IMAGE_BASE_URL}${actor.profile_path}`)
+        }
       />
       <Text style={styles.castName} numberOfLines={1}>
         {actor.name}

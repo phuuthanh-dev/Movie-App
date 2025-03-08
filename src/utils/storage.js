@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FAVORITES_KEY = "@favorites";
+const PLAYLIST_KEY = "@playlist";
 
 export const getFavoriteMovies = async () => {
   try {
@@ -8,6 +9,16 @@ export const getFavoriteMovies = async () => {
     return favorites ? JSON.parse(favorites) : [];
   } catch (error) {
     console.error("Error getting favorites:", error);
+    return [];
+  }
+};
+
+export const getPlaylist = async () => {
+  try {
+    const playlist = await AsyncStorage.getItem(PLAYLIST_KEY);
+    return playlist ? JSON.parse(playlist) : [];
+  } catch (error) {
+    console.error("Error getting playlist:", error);
     return [];
   }
 };
@@ -21,7 +32,7 @@ export const toggleFavorite = async (movie) => {
     if (isFavorite) {
       newFavorites = favorites.filter((fav) => fav.id !== movie.id);
     } else {
-      newFavorites = [...favorites, movie];
+      newFavorites = [movie, ...favorites];
     }
 
     await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
@@ -31,3 +42,24 @@ export const toggleFavorite = async (movie) => {
     throw error;
   }
 };
+
+export const toggleToPlaylist = async (movie) => {
+  try {
+    const playlist = await getPlaylist();
+    const isAdded = playlist.some((fav) => fav.id === movie.id);
+    let newPlaylist;
+    
+    if (isAdded) {
+      newPlaylist = playlist.filter((fav) => fav.id !== movie.id);
+    } else {
+      newPlaylist = [movie, ...playlist];
+    }
+
+    await AsyncStorage.setItem(PLAYLIST_KEY, JSON.stringify(newPlaylist));
+    return newPlaylist;
+  } catch (error) {
+    console.error("Error adding to playlist:", error);
+    throw error;
+  }
+};
+

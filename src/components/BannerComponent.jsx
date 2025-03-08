@@ -40,7 +40,7 @@ const BannerComponent = ({ item }) => {
             {item.title || item.name}
           </Text>
           <View style={styles.bannerMetaInfo}>
-            <Text style={styles.bannerRating}>⭐ {item.vote_average}</Text>
+            <Text style={styles.bannerRating}>⭐ {item.vote_average.toFixed(1)}/10</Text>
             <Text style={{ color: "#fff", marginHorizontal: 10 }}>
               <AntDesign name="minus" size={14} color="#fff" />
             </Text>
